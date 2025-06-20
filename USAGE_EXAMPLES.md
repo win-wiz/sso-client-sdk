@@ -5,7 +5,7 @@
 ## 📦 安装
 
 ```bash
-npm install @win-wiz/sso-client-sdk
+npm install @tjsglion/sso-client-sdk
 ```
 
 ## 🚀 基础使用
@@ -13,7 +13,7 @@ npm install @win-wiz/sso-client-sdk
 ### 1. 基本配置
 
 ```javascript
-import { SSOClient } from '@win-wiz/sso-client-sdk';
+import { SSOClient } from '@tjsglion/sso-client-sdk';
 
 const ssoClient = new SSOClient({
   baseUrl: 'https://your-sso-service.com',
@@ -340,7 +340,7 @@ pluginManager.install({
 
 ```jsx
 import React, { useState } from 'react';
-import { useSSO } from '@win-wiz/sso-client-sdk/react';
+import { useSSO } from '@tjsglion/sso-client-sdk/react';
 
 function LoginPage() {
   const [email, setEmail] = useState('');
@@ -411,7 +411,7 @@ function LoginPage() {
 
 ```jsx
 import React from 'react';
-import { useSSO } from '@win-wiz/sso-client-sdk/react';
+import { useSSO } from '@tjsglion/sso-client-sdk/react';
 
 function App() {
   const { 
@@ -482,7 +482,7 @@ function App() {
 
 <script setup>
 import { ref } from 'vue';
-import { SSOClient } from '@win-wiz/sso-client-sdk';
+import { SSOClient } from '@tjsglion/sso-client-sdk';
 
 const email = ref('');
 const password = ref('');
@@ -530,7 +530,7 @@ const logout = () => {
 ### 1. 验证函数
 
 ```javascript
-import { isValidEmail, validatePasswordStrength } from '@win-wiz/sso-client-sdk/utils';
+import { isValidEmail, validatePasswordStrength } from '@tjsglion/sso-client-sdk/utils';
 
 // 验证邮箱格式
 console.log(isValidEmail('user@example.com')); // true
@@ -555,7 +555,7 @@ import {
   deepMerge, 
   generateRandomString,
   getClientInfo 
-} from '@win-wiz/sso-client-sdk/utils';
+} from '@tjsglion/sso-client-sdk/utils';
 
 // 防抖
 const debouncedSearch = debounce((query) => {
@@ -585,7 +585,7 @@ const clientInfo = getClientInfo();
 ### 1. 错误类型
 
 ```javascript
-import { SSOError } from '@win-wiz/sso-client-sdk';
+import { SSOError } from '@tjsglion/sso-client-sdk';
 
 try {
   await ssoClient.loginWithPassword({ email, password });

@@ -19,7 +19,7 @@
 ### ✅ 配置正确性
 - [x] package.json 配置正确
 - [x] 版本号正确 (3.0.0)
-- [x] 包名正确 (@win-wiz/sso-client-sdk)
+- [x] 包名正确 (@tjsglion/sso-client-sdk)
 - [x] 导出配置正确
 - [x] 文件包含列表正确
 
@@ -78,13 +78,13 @@ git push origin v3.0.0
 ### 5. 验证发布
 ```bash
 # 检查 NPM 包
-npm view @win-wiz/sso-client-sdk
+npm view @tjsglion/sso-client-sdk
 
 # 测试安装
 mkdir test-install
 cd test-install
-npm install @win-wiz/sso-client-sdk
-node -e "const { SSOClient } = require('@win-wiz/sso-client-sdk'); console.log('✅ 安装成功');"
+npm install @tjsglion/sso-client-sdk
+node -e "const { SSOClient } = require('@tjsglion/sso-client-sdk'); console.log('✅ 安装成功');"
 ```
 
 ## 📊 发布后验证

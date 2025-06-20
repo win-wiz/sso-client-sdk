@@ -55,12 +55,12 @@ jobs:
             
             ### 安装
             ```bash
-            npm install @win-wiz/sso-client-sdk
+            npm install @tjsglion/sso-client-sdk
             ```
             
             ### 使用
             ```javascript
-            import { SSOClient } from '@win-wiz/sso-client-sdk';
+            import { SSOClient } from '@tjsglion/sso-client-sdk';
             
             const ssoClient = new SSOClient({
               baseUrl: 'https://your-sso-service.com'

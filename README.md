@@ -1,6 +1,6 @@
 # SSO客户端SDK
 
-[![npm version](https://badge.fury.io/js/%40win-wiz%2Fsso-client-sdk.svg)](https://badge.fury.io/js/%40win-wiz%2Fsso-client-sdk)
+[![npm version](https://badge.fury.io/js/%40tjsglion%2Fsso-client-sdk.svg)](https://badge.fury.io/js/%40tjsglion%2Fsso-client-sdk)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-16+-green.svg)](https://nodejs.org/)
@@ -37,13 +37,13 @@
 
 ```bash
 # 使用 npm
-npm install @win-wiz/sso-client-sdk
+npm install @tjsglion/sso-client-sdk
 
 # 使用 yarn
-yarn add @win-wiz/sso-client-sdk
+yarn add @tjsglion/sso-client-sdk
 
 # 使用 pnpm
-pnpm add @win-wiz/sso-client-sdk
+pnpm add @tjsglion/sso-client-sdk
 ```
 
 ## 🚀 快速开始
@@ -51,7 +51,7 @@ pnpm add @win-wiz/sso-client-sdk
 ### 基本使用
 
 ```javascript
-import { SSOClient } from '@win-wiz/sso-client-sdk';
+import { SSOClient } from '@tjsglion/sso-client-sdk';
 
 const ssoClient = new SSOClient({
   baseUrl: 'https://your-sso-service.com',
@@ -117,7 +117,7 @@ ssoClient.logout();
 ### React Hook 使用
 
 ```javascript
-import { useSSO } from '@win-wiz/sso-client-sdk/react';
+import { useSSO } from '@tjsglion/sso-client-sdk/react';
 
 function LoginComponent() {
   const { 
@@ -265,7 +265,7 @@ npm run release
 
 ## 🆘 支持
 
-- 📧 邮箱: your-email@example.com
+- 📧 邮箱: tjsglion@gmail.com
 - 🐛 Issues: [GitHub Issues](https://github.com/win-wiz/sso-client-sdk/issues)
 - 📖 文档: [项目文档](./docs/)
 - 💬 讨论: [GitHub Discussions](https://github.com/win-wiz/sso-client-sdk/discussions)

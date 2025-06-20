@@ -108,7 +108,7 @@ npm run release:major
 
 ```json
 {
-  "name": "@win-wiz/sso-client-sdk",
+  "name": "@tjsglion/sso-client-sdk",
   "version": "3.0.0",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -154,7 +154,7 @@ npm run release:major
 npm pack
 
 # 检查包内容
-tar -tf win-wiz-sso-client-sdk-3.0.0.tgz
+tar -tf tjsglion-sso-client-sdk-3.0.0.tgz
 ```
 
 ### 使用 npm link 测试
@@ -165,10 +165,10 @@ npm link
 
 # 在测试项目中链接
 cd ../test-project
-npm link @win-wiz/sso-client-sdk
+npm link @tjsglion/sso-client-sdk
 
 # 测试使用
-import { SSOClient } from '@win-wiz/sso-client-sdk';
+import { SSOClient } from '@tjsglion/sso-client-sdk';
 ```
 
 ## 🔐 安全考虑
@@ -196,10 +196,10 @@ export NPM_TOKEN=your-token-here
 
 ```bash
 # 查看包信息
-npm view @win-wiz/sso-client-sdk
+npm view @tjsglion/sso-client-sdk
 
 # 查看版本历史
-npm view @win-wiz/sso-client-sdk versions
+npm view @tjsglion/sso-client-sdk versions
 ```
 
 ### 2. 测试安装
@@ -210,10 +210,10 @@ mkdir test-install
 cd test-install
 
 # 安装包
-npm install @win-wiz/sso-client-sdk
+npm install @tjsglion/sso-client-sdk
 
 # 测试导入
-node -e "const { SSOClient } = require('@win-wiz/sso-client-sdk'); console.log('✅ 安装成功');"
+node -e "const { SSOClient } = require('@tjsglion/sso-client-sdk'); console.log('✅ 安装成功');"
 ```
 
 ### 3. 检查 GitHub Release
@@ -239,7 +239,7 @@ npm login
 
 ```bash
 # 检查已发布的版本
-npm view @win-wiz/sso-client-sdk versions
+npm view @tjsglion/sso-client-sdk versions
 
 # 更新版本号
 npm version patch
