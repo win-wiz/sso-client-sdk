@@ -1,56 +1,93 @@
 {
-  "name": "@your-org/sso-client-sdk",
-  "version": "1.0.0",
-  "description": "轻量级SSO客户端SDK，支持多种框架和SSO提供商，同时支持传统邮箱密码登录",
-  "main": "dist/index.js",
+  "name": "@win-wiz/sso-client-sdk",
+  "version": "3.0.0",
+  "description": "企业级SSO客户端SDK，支持多种认证方式、框架集成和高级功能",
   "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "import": "./dist/index.js",
+      "require": "./dist/index.js",
       "types": "./dist/index.d.ts"
     },
     "./react": {
       "import": "./dist/react/useSSO.js",
+      "require": "./dist/react/useSSO.js",
       "types": "./dist/react/useSSO.d.ts"
+    },
+    "./utils": {
+      "import": "./dist/utils/index.js",
+      "require": "./dist/utils/index.js",
+      "types": "./dist/utils/index.d.ts"
     }
   },
   "files": [
-    "dist",
-    "README.md"
+    "dist/**/*",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
   ],
-  "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
-    "clean": "rm -rf dist",
-    "prepublishOnly": "npm run build"
-  },
   "keywords": [
     "sso",
     "oauth",
     "authentication",
     "login",
+    "2fa",
+    "typescript",
     "react",
     "vue",
-    "typescript",
+    "javascript",
     "client-sdk",
-    "local-login",
-    "password-login"
+    "enterprise",
+    "single-sign-on"
   ],
-  "author": "Your Name",
+  "author": {
+    "name": "win-wiz",
+    "email": "your-email@example.com",
+    "url": "https://github.com/win-wiz"
+  },
   "license": "MIT",
-  "devDependencies": {
-    "typescript": "^5.0.0"
-  },
-  "peerDependencies": {
-    "react": ">=16.8.0"
-  },
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-org/sso-client-sdk.git"
+    "url": "git@github.com:win-wiz/sso-client-sdk.git"
   },
   "bugs": {
-    "url": "https://github.com/your-org/sso-client-sdk/issues"
+    "url": "https://github.com/win-wiz/sso-client-sdk/issues"
   },
-  "homepage": "https://github.com/your-org/sso-client-sdk#readme"
+  "homepage": "https://github.com/win-wiz/sso-client-sdk#readme",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "prebuild": "npm run clean",
+    "prepublishOnly": "npm run build && npm run test",
+    "test": "node test-enterprise.js",
+    "test:simple": "node test-simple.js",
+    "test:optimized": "node test-optimized.js",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "format": "prettier --write src/**/*.ts",
+    "docs": "npm run build && node scripts/generate-docs.js",
+    "release": "npm run build && npm publish",
+    "release:patch": "npm version patch && npm run release",
+    "release:minor": "npm version minor && npm run release",
+    "release:major": "npm version major && npm run release"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
 } 

@@ -155,4 +155,8 @@ try {
 } catch (error) {
   console.error('❌ 企业级功能测试失败:', error.message);
   process.exit(1);
+} finally {
+  // 销毁客户端，释放所有后台资源（如定时器、广播通道）
+  ssoClient.destroy();
+  console.log('\n✅ 测试脚本执行完毕，资源已释放。');
 } 
