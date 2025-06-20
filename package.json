@@ -1,0 +1,56 @@
+{
+  "name": "@your-org/sso-client-sdk",
+  "version": "1.0.0",
+  "description": "轻量级SSO客户端SDK，支持多种框架和SSO提供商，同时支持传统邮箱密码登录",
+  "main": "dist/index.js",
+  "type": "module",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./react": {
+      "import": "./dist/react/useSSO.js",
+      "types": "./dist/react/useSSO.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "sso",
+    "oauth",
+    "authentication",
+    "login",
+    "react",
+    "vue",
+    "typescript",
+    "client-sdk",
+    "local-login",
+    "password-login"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "peerDependencies": {
+    "react": ">=16.8.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/sso-client-sdk.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-org/sso-client-sdk/issues"
+  },
+  "homepage": "https://github.com/your-org/sso-client-sdk#readme"
+} 
