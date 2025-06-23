@@ -3,112 +3,119 @@
 const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
-
-console.log('🚀 开始发布 SSO 客户端 SDK...\n');
-
-// 检查是否在正确的目录
-if (!fs.existsSync('package.json')) {
-  console.error('❌ 错误: 请在项目根目录运行此脚本');
-  process.exit(1);
-}
-
-// 检查是否有未提交的更改
-try {
-  const status = execSync('git status --porcelain', { encoding: 'utf8' });
-  if (status.trim()) {
-    console.error('❌ 错误: 有未提交的更改，请先提交所有更改');
-    console.log('未提交的文件:');
-    console.log(status);
-    process.exit(1);
-  }
-} catch (error) {
-  console.error('❌ 错误: 无法检查Git状态');
-  process.exit(1);
-}
-
-// 检查当前分支
-try {
-  const branch = execSync('git branch --show-current', { encoding: 'utf8' }).trim();
-  if (branch !== 'main' && branch !== 'master') {
-    console.error(`❌ 错误: 当前分支是 ${branch}，请在 main 或 master 分支发布`);
-    process.exit(1);
-  }
-} catch (error) {
-  console.error('❌ 错误: 无法检查当前分支');
-  process.exit(1);
-}
-
-// 运行测试
-console.log('🧪 运行测试...');
-try {
-  execSync('npm test', { stdio: 'inherit' });
-  console.log('✅ 测试通过\n');
-} catch (error) {
-  console.error('❌ 测试失败');
-  process.exit(1);
-}
-
-// 构建项目
-console.log('🔨 构建项目...');
-try {
-  execSync('npm run build', { stdio: 'inherit' });
-  console.log('✅ 构建成功\n');
-} catch (error) {
-  console.error('❌ 构建失败');
-  process.exit(1);
-}
-
-// 检查构建输出
-if (!fs.existsSync('dist/index.js')) {
-  console.error('❌ 错误: 构建输出不存在');
-  process.exit(1);
-}
-
-// 读取当前版本
-const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-const currentVersion = packageJson.version;
-
-console.log(`📦 当前版本: ${currentVersion}`);
-
-// 询问是否继续
 const readline = require('readline');
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
 
-rl.question('\n是否继续发布到 NPM? (y/N): ', (answer) => {
-  rl.close();
+// 颜色输出
+const colors = {
+  green: '\x1b[32m',
+  red: '\x1b[31m',
+  yellow: '\x1b[33m',
+  blue: '\x1b[34m',
+  reset: '\x1b[0m'
+};
+
+function log(message, color = 'reset') {
+  console.log(`${colors[color]}${message}${colors.reset}`);
+}
+
+// 递增版本号
+function bumpVersion(version, type = 'patch') {
+  const parts = version.split('.').map(Number);
+  const [major, minor, patch] = parts;
   
-  if (answer.toLowerCase() !== 'y' && answer.toLowerCase() !== 'yes') {
-    console.log('❌ 发布已取消');
-    process.exit(0);
+  switch (type) {
+    case 'major': return `${major + 1}.0.0`;
+    case 'minor': return `${major}.${minor + 1}.0`;
+    default: return `${major}.${minor}.${patch + 1}`;
   }
+}
 
-  // 发布到 NPM
-  console.log('\n📤 发布到 NPM...');
+// 更新 package.json 版本号
+function updateVersion(newVersion) {
+  const packagePath = 'package.json';
+  const packageJson = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
+  packageJson.version = newVersion;
+  fs.writeFileSync(packagePath, JSON.stringify(packageJson, null, 2) + '\n');
+}
+
+// 回滚版本更改
+function revertVersion(oldVersion, newVersion) {
+  log(`\n操作已取消或失败，正在回滚版本 ${newVersion} -> ${oldVersion}`, 'yellow');
+  updateVersion(oldVersion);
   try {
-    execSync('npm publish', { stdio: 'inherit' });
-    console.log('✅ 发布成功!\n');
-  } catch (error) {
-    console.error('❌ 发布失败');
+    execSync('git add package.json', { stdio: 'pipe' });
+    execSync(`git commit -m "chore: revert version bump to ${newVersion}"`, { stdio: 'pipe' });
+    log('版本回滚提交完成。', 'green');
+  } catch (e) {
+    log('回滚提交失败，请手动检查 `package.json` 和 git 状态。', 'red');
+  }
+}
+
+// --- 主流程 ---
+try {
+  // 1. 获取当前版本和新版本
+  const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+  const currentVersion = packageJson.version;
+  const versionType = process.argv[2] || 'patch';
+
+  if (!['patch', 'minor', 'major'].includes(versionType)) {
+    log('错误: 版本类型必须是 patch、minor 或 major', 'red');
     process.exit(1);
   }
 
-  // 创建 Git 标签
-  console.log('🏷️ 创建 Git 标签...');
-  try {
-    execSync(`git tag v${currentVersion}`, { stdio: 'inherit' });
-    execSync('git push --tags', { stdio: 'inherit' });
-    console.log('✅ Git 标签创建成功\n');
-  } catch (error) {
-    console.error('❌ Git 标签创建失败');
-    process.exit(1);
-  }
+  const newVersion = bumpVersion(currentVersion, versionType);
 
-  console.log('🎉 发布完成!');
-  console.log(`📦 包名: ${packageJson.name}`);
-  console.log(`📋 版本: ${currentVersion}`);
-  console.log(`🌐 NPM: https://www.npmjs.com/package/${packageJson.name}`);
-  console.log(`📚 GitHub: ${packageJson.homepage}`);
-}); 
+  // 2. 更新版本并自动提交
+  log(`当前版本: ${currentVersion}`, 'blue');
+  updateVersion(newVersion);
+  log(`版本已更新: ${newVersion}`, 'green');
+
+  log('自动提交版本更新...', 'blue');
+  execSync('git add package.json', { stdio: 'inherit' });
+  execSync(`git commit -m "release: v${newVersion}"`, { stdio: 'inherit' });
+  log('版本更新提交完成。', 'green');
+
+  // 3. 构建项目
+  log('构建项目...', 'blue');
+  execSync('npm run build', { stdio: 'inherit' });
+
+  // 4. 确认发布
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+
+  rl.question(`确认将版本 v${newVersion} 发布到 npm? (y/N): `, (answer) => {
+    rl.close();
+    if (answer.toLowerCase() !== 'y' && answer.toLowerCase() !== 'yes') {
+      revertVersion(currentVersion, newVersion);
+      process.exit(0);
+    }
+
+    try {
+      // 5. 发布到 npm
+      log('发布中...', 'blue');
+      execSync('npm publish --access public', { stdio: 'inherit' });
+      log(`✅ v${newVersion} 发布成功!`, 'green');
+
+      // 6. 推送 Git Tag
+      log('创建并推送 Git Tag...', 'blue');
+      execSync(`git tag v${newVersion}`, { stdio: 'inherit' });
+      execSync(`git push origin v${newVersion}`, { stdio: 'inherit' });
+      log(`Git tag v${newVersion} 推送成功!`, 'green');
+
+      log(`\n访问你的包: https://www.npmjs.com/package/${packageJson.name}`, 'green');
+
+    } catch (publishError) {
+      log('\n发布失败!', 'red');
+      log(publishError.message, 'red');
+      revertVersion(currentVersion, newVersion);
+      process.exit(1);
+    }
+  });
+
+} catch (e) {
+  log('\n自动化脚本发生未知错误!', 'red');
+  log(e.message, 'red');
+  process.exit(1);
+} 

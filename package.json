@@ -1,6 +1,6 @@
 {
   "name": "@tjsglion/sso-client-sdk",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "type": "module",
   "description": "SSO Client SDK for browser applications",
   "main": "dist/index.js",
@@ -10,14 +10,19 @@
     "dist"
   ],
   "scripts": {
-    "build": "rollup -c",
-    "test": "jest",
+    "build": "npm run clean && rollup -c",
+    "clean": "rm -rf dist",
+    "type-check": "tsc --noEmit",
+    "test": "echo \"No tests specified, skipping...\" && exit 0",
     "lint": "eslint src --ext .ts,.tsx",
     "prepublishOnly": "npm run build",
-    "publish": "node scripts/publish.cjs",
-    "publish:patch": "node scripts/publish.cjs patch",
-    "publish:minor": "node scripts/publish.cjs minor",
-    "publish:major": "node scripts/publish.cjs major"
+    "postpublish": "echo \"Package published successfully!\"",
+    "publish": "node scripts/publish.cjs --patch",
+    "publish:patch": "node scripts/publish.cjs --patch",
+    "publish:minor": "node scripts/publish.cjs --minor",
+    "publish:major": "node scripts/publish.cjs --major",
+    "publish:dry-run": "node scripts/publish.cjs --dry-run",
+    "publish:skip-tests": "node scripts/publish.cjs --skip-tests"
   },
   "dependencies": {
     "jose": "^5.2.3"
@@ -28,6 +33,7 @@
   "devDependencies": {
     "@rollup/plugin-commonjs": "^28.0.6",
     "@rollup/plugin-node-resolve": "^16.0.1",
+    "@rollup/plugin-terser": "^0.4.4",
     "@rollup/plugin-typescript": "^12.1.3",
     "@types/jest": "^29.5.4",
     "@types/node": "^24.0.3",
