@@ -2,10 +2,19 @@
 export interface SSOProvider {
   id: string;
   name: string;
-  type: 'oauth' | 'oidc' | 'saml';
-  isActive: boolean;
-  authorizationUrl: string;
+  type: string;
+  clientId: string;
+  clientSecret?: string;
   scope?: string;
+  authorizationUrl?: string;
+  tokenUrl?: string;
+  userInfoUrl?: string;
+  isActive?: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
+  iconSvg?: string;
+  iconBackgroundColor?: string;
+  iconColor?: string;
 }
 
 // 用户信息
@@ -326,4 +335,44 @@ export interface NetworkAdapter {
   isOnline(): Promise<boolean>;
   onOnline(callback: () => void): void;
   onOffline(callback: () => void): void;
+}
+
+export interface SSOClient {
+  baseUrl: string;
+  redirectUri: string;
+  providers: SSOProvider[];
+  // ... 其他配置
+}
+
+export interface SSOUser {
+  id: string;
+  name: string;
+  email: string;
+  avatar?: string;
+  provider?: string;
+}
+
+export interface AuthResponse {
+  user: SSOUser;
+  accessToken: string;
+  refreshToken?: string;
+}
+
+// 新增图标相关类型
+export interface IconInfo {
+  type: 'svg';
+  content: string;
+  backgroundColor?: string;
+  color?: string;
+}
+
+export type DefaultIconKey = 'github' | 'google' | 'facebook' | 'twitter' | 'linkedin' | 'microsoft';
+
+// React 组件props类型
+export interface SSOIconProps {
+  provider: SSOProvider;
+  size?: number | string;
+  className?: string;
+  style?: Record<string, any>;
+  onClick?: (event: any) => void;
 } 

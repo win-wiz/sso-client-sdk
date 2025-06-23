@@ -19,15 +19,26 @@
     <!-- 未登录状态 -->
     <div v-else class="login-section">
       <h2>选择登录方式</h2>
-      <div class="providers">
+      <div class="sso-buttons-container">
         <button
           v-for="provider in providers"
           :key="provider.id"
+          class="sso-login-button"
           @click="login(provider.id)"
-          :disabled="!provider.isActive"
-          class="login-btn"
         >
-          使用 {{ provider.name }} 登录
+          <!-- 方案1：使用图标包（推荐） -->
+          <!-- 
+          <SSOIcon 
+            :provider="provider"
+            :size="24"
+            class="provider-icon"
+          />
+          -->
+          
+          <!-- 方案2：简单文字显示（如果不想使用图标包） -->
+          <span class="provider-name">{{ provider.name.charAt(0).toUpperCase() }}</span>
+          
+          <span>Continue with {{ provider.name }}</span>
         </button>
       </div>
     </div>
@@ -36,7 +47,33 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { SSOClient } from '@your-org/sso-client';
+
+// 模拟的 SSOClient（实际使用时从 SDK 导入）
+class SSOClient {
+  constructor(config: any) {
+    this.config = config;
+  }
+  
+  async getProviders() {
+    return [
+      { id: 'github', name: 'GitHub', type: 'oauth' },
+      { id: 'google', name: 'Google', type: 'oauth' },
+      { id: 'microsoft', name: 'Microsoft', type: 'oauth' }
+    ];
+  }
+  
+  async getCurrentUser() {
+    return null; // 模拟未登录状态
+  }
+  
+  async login(providerId: string) {
+    console.log(`登录到 ${providerId}`);
+  }
+  
+  logout() {
+    console.log('登出');
+  }
+}
 
 // 状态
 const user = ref(null);
@@ -47,7 +84,8 @@ const providers = ref([]);
 
 // SSO客户端
 const ssoClient = new SSOClient({
-  baseUrl: 'https://your-sso-server.com',
+  baseUrl: 'https://your-sso-service.com',
+  redirectUri: 'http://localhost:3000/callback',
   storage: 'localStorage',
   autoRefresh: true,
   refreshThreshold: 300,
@@ -63,11 +101,8 @@ const ssoClient = new SSOClient({
 });
 
 // 登录方法
-const login = (providerId: string) => {
-  ssoClient.login({
-    providerId,
-    redirectTo: '/dashboard'
-  });
+const login = async (providerId: string) => {
+  await ssoClient.login(providerId);
 };
 
 // 登出方法
@@ -80,8 +115,7 @@ const logout = () => {
 // 获取提供商列表
 const loadProviders = async () => {
   try {
-    const providerList = await ssoClient.getProviders();
-    providers.value = providerList;
+    providers.value = await ssoClient.getProviders();
   } catch (err) {
     error.value = err.message;
   }
@@ -128,34 +162,47 @@ onMounted(async () => {
   padding: 2rem;
 }
 
-.providers {
+.sso-buttons-container {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  max-width: 300px;
-  margin: 0 auto;
+  gap: 8px;
+  width: 100%;
+  max-width: 320px;
 }
 
-.login-btn, .logout-btn {
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 4px;
+.sso-login-button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: white;
   cursor: pointer;
-  font-size: 1rem;
+  transition: all 0.2s;
+  width: 100%;
 }
 
-.login-btn {
-  background-color: #007bff;
+.sso-login-button:hover {
+  background: #f9fafb;
+}
+
+.provider-icon {
+  width: 24px;
+  height: 24px;
+}
+
+.provider-name {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #6B7280;
   color: white;
-}
-
-.login-btn:hover {
-  background-color: #0056b3;
-}
-
-.login-btn:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
 }
 
 .logout-btn {

@@ -258,33 +258,52 @@ export class SSOClient {
 
   // 获取SSO提供商列表
   async getProviders(): Promise<SSOProvider[]> {
-    return this.withPerformanceMonitoring('api_call', async () => {
-      try {
-        // 检查缓存
-        const cached = this.cache.get('providers');
-        if (cached) {
-          return cached;
-        }
+    return this.withPerformanceMonitoring<SSOProvider[]>(
+      'api_call',
+      async () => {
+        try {
+          // 尝试从缓存获取
+          const cachedProviders = this.cache.get('providers');
+          if (cachedProviders) {
+            return cachedProviders as SSOProvider[];
+          }
 
-        const response = await fetchWithRetry(
-          `${this.config.baseUrl}/sso/providers`,
-          { method: 'GET' },
-          this.config.retry!
-        );
-        
-        const result: ApiResponse<SSOProvider[]> = await response.json();
-        
-        if (result.code === 200 && result.data) {
+          const response = await fetchWithRetry(
+            `${this.config.baseUrl}/sso/providers`,
+            {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json'
+              }
+            },
+            this.config.retry || {
+              maxRetries: 3,
+              retryDelay: 1000,
+              backoffMultiplier: 2,
+              retryableErrors: ['500', '502', '503', '504', '429']
+            }
+          );
+
+          if (!response.ok) {
+            throw await response.json();
+          }
+
+          const providers = await response.json();
+          
+          // 返回提供商数据（图标信息通过IconManager处理）
+          const processedProviders = providers;
           // 缓存结果
-          this.cache.set('providers', result.data, 300);
-          return result.data;
+          this.cache.set('providers', processedProviders, 3600); // 设置1小时的缓存时间
+          
+          return processedProviders;
+        } catch (error) {
+          const ssoError = this.convertToSSOError(error, 'PROVIDERS_FETCH_ERROR');
+          this.handleError(ssoError);
+          throw ssoError;
         }
-        throw createSSOError(result.message || '获取提供商失败', 'PROVIDERS_FETCH_ERROR');
-      } catch (error) {
-        this.handleError(this.convertToSSOError(error, 'PROVIDERS_FETCH_ERROR'));
-        throw error;
-      }
-    }, { endpoint: '/sso/providers' });
+      },
+      { endpoint: '/sso/providers', operation: 'getProviders' }
+    );
   }
 
   // 跳转到SSO登录

@@ -1,9 +1,48 @@
 // 原生JavaScript使用示例
-import { SSOClient } from '@your-org/sso-client';
+// import { SSOClient } from '@tjsglion/sso-client-sdk';
+
+// 模拟的 SSOClient（实际使用时从 SDK 导入）
+class SSOClient {
+  constructor(config) {
+    this.config = config;
+    this.providers = [
+      { id: 'github', name: 'GitHub', type: 'oauth' },
+      { id: 'google', name: 'Google', type: 'oauth' },
+      { id: 'microsoft', name: 'Microsoft', type: 'oauth' }
+    ];
+  }
+
+  async getProviders() {
+    return this.providers;
+  }
+
+  async getCurrentUser() {
+    return null; // 模拟未登录状态
+  }
+
+  async login(options) {
+    console.log(`登录到 ${options.providerId}`);
+    // 实际实现会跳转到 OAuth 页面
+  }
+
+  logout() {
+    console.log('登出');
+  }
+
+  async handleCallback(options) {
+    console.log('处理回调');
+    return null;
+  }
+
+  onAuthChange(callback) {
+    this.authCallback = callback;
+  }
+}
 
 // 创建SSO客户端
 const ssoClient = new SSOClient({
-  baseUrl: 'https://your-sso-server.com',
+  baseUrl: 'https://your-sso-service.com',
+  redirectUri: 'http://localhost:3000/callback',
   storage: 'localStorage',
   autoRefresh: true,
   refreshThreshold: 300,
@@ -84,6 +123,7 @@ function showLoginOptions() {
         ${!provider.isActive ? 'disabled' : ''}
         class="login-btn"
       >
+        <span class="provider-name">${provider.name.charAt(0).toUpperCase()}</span>
         使用 ${provider.name} 登录
       </button>
     `)
@@ -190,4 +230,67 @@ ssoClient.onAuthChange((state) => {
 
 // 导出到全局作用域（用于HTML中的onclick）
 window.login = login;
-window.logout = logout; 
+window.logout = logout;
+
+// 添加样式
+const style = document.createElement('style');
+style.textContent = `
+  .providers {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 320px;
+  }
+
+  .login-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s;
+    width: 100%;
+  }
+
+  .login-btn:hover {
+    background: #f9fafb;
+  }
+
+  .provider-name {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #6B7280;
+    color: white;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+  }
+
+  .error {
+    color: red;
+    padding: 1rem;
+    border: 1px solid red;
+    border-radius: 4px;
+    margin: 1rem 0;
+  }
+
+  .logout-btn {
+    background-color: #dc3545;
+    color: white;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  .logout-btn:hover {
+    background-color: #c82333;
+  }
+`;
+document.head.appendChild(style); 

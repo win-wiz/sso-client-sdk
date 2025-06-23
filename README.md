@@ -18,6 +18,7 @@
 - 🔐 支持SSO和传统登录
 - 👤 用户注册功能
 - 🔒 统一的状态管理
+- 🎨 支持自定义和默认图标
 - 🧩 支持2FA、邮箱验证、密码重置
 - ⚡ 智能重试机制（指数退避）
 - 💾 内存缓存系统
@@ -57,6 +58,17 @@ const ssoClient = new SSOClient({
   baseUrl: 'https://your-sso-service.com',
   redirectUri: 'http://localhost:3000/callback'
 });
+
+// 获取SSO提供商列表（包含图标信息）
+const providers = await ssoClient.getProviders();
+// providers 包含图标信息：
+// {
+//   id: 'google',
+//   name: 'Google',
+//   iconType: 'default',
+//   iconKey: 'google',
+//   ...
+// }
 
 // SSO登录
 ssoClient.login({ providerId: 'google' });
@@ -118,6 +130,7 @@ ssoClient.logout();
 
 ```javascript
 import { useSSO } from '@tjsglion/sso-client-sdk/react';
+import { SSOIcon } from '@tjsglion/sso-client-sdk/react/components';
 
 function LoginComponent() {
   const { 
@@ -125,7 +138,8 @@ function LoginComponent() {
     isAuthenticated, 
     isLoading, 
     error, 
-    login, 
+    login,
+    providers, // 包含图标信息的提供商列表
     loginWithPassword,
     register,
     logout 
@@ -144,15 +158,57 @@ function LoginComponent() {
           <button onClick={logout}>登出</button>
         </div>
       ) : (
-        <div>
-          <button onClick={() => login({ providerId: 'google' })}>
-            使用Google登录
-          </button>
+        <div className="grid grid-cols-2 gap-4">
+          {providers.map(provider => (
+            <button
+              key={provider.id}
+              onClick={() => login({ providerId: provider.id })}
+              className="relative flex items-center justify-center py-2 px-4 border rounded-md"
+            >
+              <span className="absolute left-0 inset-y-0 flex items-center pl-3">
+                <SSOIcon provider={provider} />
+              </span>
+              <span>使用 {provider.name} 登录</span>
+            </button>
+          ))}
         </div>
       )}
     </div>
   );
 }
+```
+
+### 图标配置
+
+SDK 支持两种类型的图标：
+
+1. 默认图标
+```javascript
+const provider = {
+  id: 'google',
+  name: 'Google',
+  iconType: 'default',
+  iconKey: 'google', // 对应 /public/icons/google.svg
+};
+```
+
+2. 自定义图标
+```javascript
+const provider = {
+  id: 'custom',
+  name: 'Custom Provider',
+  iconType: 'custom',
+  iconContent: 'base64_encoded_content_or_svg_text',
+  iconContentType: 'image/png', // 或 'text/svg+xml'
+};
+```
+
+3. 图标回退机制
+```javascript
+<SSOIcon 
+  provider={provider}
+  fallback={(provider) => provider.name[0].toUpperCase()} // 自定义回退显示
+/>
 ```
 
 ### 企业级配置
