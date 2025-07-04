@@ -70,6 +70,14 @@ export class SSOClient {
   };
   private refreshTimer?: NodeJS.Timeout;
   private cache: SimpleCache;
+  private instanceId: string;
+  
+  // 防重复调用机制
+  private currentUserPromise: Promise<User | null> | null = null;
+  private validateTokenPromise: Promise<boolean> | null = null;
+  private lastCurrentUserCall = 0;
+  private lastValidateTokenCall = 0;
+  private readonly DEBOUNCE_INTERVAL = 1000; // 1秒内的重复调用将被忽略
   
   // 企业级功能
   private performanceMonitor: PerformanceMonitor;
@@ -82,6 +90,9 @@ export class SSOClient {
   private eventListeners: Map<string, EventListener[]> = new Map();
 
   constructor(config: SSOClientConfig) {
+    this.instanceId = Math.random().toString(36).substring(2, 15);
+    console.log(`SSOClient创建: 实例ID=${this.instanceId}`);
+    
     this.config = {
       storage: 'localStorage',
       autoRefresh: true,
@@ -239,9 +250,19 @@ export class SSOClient {
   private initStorage(): Storage {
     switch (this.config.storage) {
       case 'localStorage':
-        return typeof window !== 'undefined' ? window.localStorage : new MemoryStorage();
+        if (typeof window !== 'undefined' && window.localStorage) {
+          return window.localStorage;
+        } else {
+          console.warn('localStorage not available, falling back to MemoryStorage');
+          return new MemoryStorage();
+        }
       case 'sessionStorage':
-        return typeof window !== 'undefined' ? window.sessionStorage : new MemoryStorage();
+        if (typeof window !== 'undefined' && window.sessionStorage) {
+          return window.sessionStorage;
+        } else {
+          console.warn('sessionStorage not available, falling back to MemoryStorage');
+          return new MemoryStorage();
+        }
       case 'memory':
       default:
         return new MemoryStorage();
@@ -249,10 +270,16 @@ export class SSOClient {
   }
 
   private initAuthState(): void {
-    // 从存储中恢复令牌
+    // 从存储中恢复令牌，但不自动验证
+    // 避免在实例化时就发起网络请求，让上层应用决定何时验证
+    console.log(`SSOClient[${this.instanceId}]: initAuthState - 检查本地token存在性`);
     const token = this.storage.getItem('sso_token');
     if (token) {
-      this.validateToken(token);
+      console.log(`SSOClient[${this.instanceId}]: initAuthState - 发现本地token，但不自动验证（避免重复调用）`);
+      // 仅更新内部状态，表示可能已认证，但不发起网络验证
+      // 实际验证将在第一次调用getCurrentUser时进行
+    } else {
+      console.log(`SSOClient[${this.instanceId}]: initAuthState - 无本地token`);
     }
   }
 
@@ -306,9 +333,24 @@ export class SSOClient {
     );
   }
 
-  // 跳转到SSO登录
+  // 跳转到SSO登录（防重复调用）
+  private lastLoginTime = 0;
+  private readonly LOGIN_DEBOUNCE_INTERVAL = 2000; // 2秒内禁止重复登录
+  
   login(options: LoginOptions): void {
+    const now = Date.now();
+    
+    // 防止重复调用
+    if (now - this.lastLoginTime < this.LOGIN_DEBOUNCE_INTERVAL) {
+      console.log(`SSOClient.login[${this.instanceId}]: 检测到重复登录请求，忽略 (${now - this.lastLoginTime}ms < ${this.LOGIN_DEBOUNCE_INTERVAL}ms)`);
+      return;
+    }
+    
+    this.lastLoginTime = now;
+    
     const { providerId, redirectTo, state } = options;
+    
+    console.log(`SSOClient.login[${this.instanceId}]: 开始SSO登录 - ${providerId}`);
     
     // 保存重定向地址
     if (redirectTo) {
@@ -321,6 +363,7 @@ export class SSOClient {
 
     // 跳转到登录页面
     const loginUrl = `${this.config.baseUrl}/sso/login/${providerId}?state=${loginState}`;
+    console.log(`SSOClient.login[${this.instanceId}]: 跳转到 ${loginUrl}`);
     window.location.href = loginUrl;
   }
 
@@ -978,31 +1021,77 @@ export class SSOClient {
     }
   }
 
-  // 获取当前用户信息
+  // 获取当前用户信息（带防重复调用机制）
   async getCurrentUser(): Promise<User | null> {
+    const now = Date.now();
+    
+    // 添加更详细的调用信息
+    const stack = new Error().stack;
+    const caller = stack?.split('\n')[2]?.trim() || 'unknown';
+    console.log(`🚀 SSOClient.getCurrentUser[${this.instanceId}]: 被调用 - 时间:${now}, 距离上次:${now - this.lastCurrentUserCall}ms`);
+    console.log(`🚀 调用者: ${caller}`);
+    
+    // 防重复调用：如果在短时间内有重复调用，返回同一个Promise
+    if (this.currentUserPromise && (now - this.lastCurrentUserCall) < this.DEBOUNCE_INTERVAL) {
+      console.log(`⏰ SSOClient.getCurrentUser[${this.instanceId}]: 检测到重复调用(${now - this.lastCurrentUserCall}ms < ${this.DEBOUNCE_INTERVAL}ms)，返回现有Promise`);
+      return this.currentUserPromise;
+    }
+    
+    this.lastCurrentUserCall = now;
+    
+    // 创建新的Promise并缓存
+    this.currentUserPromise = this._doGetCurrentUser();
+    
     try {
+      const result = await this.currentUserPromise;
+      return result;
+    } finally {
+      // 请求完成后清除缓存的Promise，允许下次真正需要时重新发起请求
+      setTimeout(() => {
+        this.currentUserPromise = null;
+      }, this.DEBOUNCE_INTERVAL);
+    }
+  }
+
+  // 实际的获取用户信息逻辑
+  private async _doGetCurrentUser(): Promise<User | null> {
+    try {
+      // 添加调用栈跟踪
+      const stack = new Error().stack;
+      console.log(`🔍 SSOClient.getCurrentUser[${this.instanceId}]: 开始获取用户信息`);
+      console.log(`📍 调用来源:`, stack?.split('\n').slice(1, 4).join('\n'));
+      
       const token = this.storage.getItem('sso_token');
+      console.log(`SSOClient.getCurrentUser[${this.instanceId}]: token from storage:`, token ? `${token.substring(0, 20)}...` : 'NULL');
+      
       if (!token) {
+        console.log('SSOClient.getCurrentUser: 没有token，返回null');
         return null;
       }
 
+      console.log('SSOClient.getCurrentUser: 发送请求到', `${this.config.baseUrl}/auth/me`);
       const response = await fetch(`${this.config.baseUrl}/auth/me`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
       });
 
+      console.log('SSOClient.getCurrentUser: 响应状态:', response.status);
       const result: ApiResponse<{ user: User }> = await response.json();
+      console.log('SSOClient.getCurrentUser: 响应数据:', result);
 
       if (result.code === 200 && result.data) {
         const user = result.data.user;
+        console.log('SSOClient.getCurrentUser: 获取用户成功:', user.name || user.email);
         this.updateAuthState(user, true);
         return user;
       } else if (result.code === 401) {
         // 令牌无效，清除认证状态
+        console.log('SSOClient.getCurrentUser: 收到401，清除认证状态');
         this.logout();
         return null;
       } else {
+        console.log('SSOClient.getCurrentUser: 其他错误:', result.message);
         throw new Error(result.message || '获取用户信息失败');
       }
     } catch (error) {
@@ -1011,9 +1100,39 @@ export class SSOClient {
     }
   }
 
-  // 验证令牌
+  // 验证令牌（带防重复调用机制）
   async validateToken(token: string): Promise<boolean> {
+    const now = Date.now();
+    
+    // 防重复调用：如果在短时间内有重复调用，返回同一个Promise
+    if (this.validateTokenPromise && (now - this.lastValidateTokenCall) < this.DEBOUNCE_INTERVAL) {
+      console.log(`SSOClient.validateToken[${this.instanceId}]: 检测到重复调用，返回现有Promise`);
+      return this.validateTokenPromise;
+    }
+    
+    this.lastValidateTokenCall = now;
+    
+    // 创建新的Promise并缓存
+    this.validateTokenPromise = this._doValidateToken(token);
+    
     try {
+      const result = await this.validateTokenPromise;
+      return result;
+    } finally {
+      // 请求完成后清除缓存的Promise
+      setTimeout(() => {
+        this.validateTokenPromise = null;
+      }, this.DEBOUNCE_INTERVAL);
+    }
+  }
+
+  // 实际的验证令牌逻辑
+  private async _doValidateToken(token: string): Promise<boolean> {
+    try {
+      // 添加调用栈跟踪
+      const stack = new Error().stack;
+      console.log(`🔍 SSOClient.validateToken[${this.instanceId}]: 开始验证令牌`);
+      console.log(`📍 调用来源:`, stack?.split('\n').slice(1, 4).join('\n'));
       const response = await fetch(`${this.config.baseUrl}/auth/verify`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -1021,17 +1140,20 @@ export class SSOClient {
       });
 
       const result: ApiResponse = await response.json();
+      console.log(`SSOClient.validateToken[${this.instanceId}]: 验证结果:`, result.code);
 
       if (result.code === 200) {
-        // 令牌有效，获取用户信息
-        await this.getCurrentUser();
+        // 令牌有效，但不在这里获取用户信息（避免循环调用）
+        console.log(`SSOClient.validateToken[${this.instanceId}]: 令牌有效`);
         return true;
       } else {
         // 令牌无效
+        console.log(`SSOClient.validateToken[${this.instanceId}]: 令牌无效，清除认证状态`);
         this.logout();
         return false;
       }
     } catch (error) {
+      console.error(`SSOClient.validateToken[${this.instanceId}]: 验证失败:`, error);
       this.handleError(this.convertToSSOError(error, 'TOKEN_VALIDATION_ERROR'));
       return false;
     }
@@ -1067,6 +1189,7 @@ export class SSOClient {
         return token;
       } else {
         // 刷新失败，清除认证状态
+        console.log('SSOClient: token刷新失败，清除认证状态');
         this.logout();
         return null;
       }
@@ -1108,10 +1231,11 @@ export class SSOClient {
       // 更新认证状态
       this.updateAuthState(null, false);
 
-      // 重定向到登录页面
-      if (typeof window !== 'undefined') {
-        window.location.href = '/login';
-      }
+      // 不自动重定向，让应用层处理
+      console.log('SSOClient: 用户已登出，请应用层处理重定向');
+      
+      // 触发登出事件，让应用层决定如何处理
+      this.emit('logout', { reason: 'manual_logout' });
     }
   }
 
@@ -1130,6 +1254,29 @@ export class SSOClient {
   // 生成随机state参数
   private generateState(): string {
     return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+  }
+
+  // 公共方法：设置token并更新用户状态
+  async setToken(token: string): Promise<User | null> {
+    try {
+      // 保存token
+      this.saveToken(token);
+      
+      // 验证token并获取用户信息
+      const user = await this.getCurrentUser();
+      
+      if (user) {
+        this.updateAuthState(user, true);
+        this.emit('login', { user, provider: 'sso' });
+        console.log('SSO token设置成功，用户已登录:', user.email);
+      }
+      
+      return user;
+    } catch (error) {
+      console.error('设置SSO token失败:', error);
+      this.handleError(this.convertToSSOError(error, 'TOKEN_SET_ERROR'));
+      return null;
+    }
   }
 
   // 保存令牌
